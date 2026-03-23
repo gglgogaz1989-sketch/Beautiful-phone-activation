@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Strange Boot</string>
+    <string name="password_hint">ENTER PASSWORD</string>
+</resources>
+
