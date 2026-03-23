@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.StrangeBoot" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="android:statusBarColor">@color/black</item>
+        <item name="android:windowBackground">@color/black</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
+</resources>
+
