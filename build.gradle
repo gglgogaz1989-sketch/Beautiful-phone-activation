@@ -2,7 +2,7 @@
 buildscript {
     dependencies {
         // Эта строка теперь будет искать плагин через настройки в settings.gradle
-        classpath "com.android.tools.build:gradle:8.2.2"
+        classpath "com.android.tools.build:gradle:8.2"
     }
 }
 
