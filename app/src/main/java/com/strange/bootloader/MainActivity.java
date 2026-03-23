@@ -1,9 +1,10 @@
 package com.strange.bootloader;
 
-import android.content.Context;
-import android.content.SharedPreferences;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.widget.EditText;
@@ -29,22 +30,28 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // Полный экран без лишних элементов
+        // Скрываем лишние элементы интерфейса
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
                 View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         
         setContentView(R.layout.activity_main);
 
+        // Проверка разрешения на отображение поверх окон (для автозапуска)
+        if (!Settings.canDrawOverlays(this)) {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:" + getPackageName()));
+            startActivity(intent);
+        }
+
         logText = findViewById(R.id.logText);
         helloText = findViewById(R.id.helloText);
         passwordInput = findViewById(R.id.passwordInput);
         rootLayout = findViewById(android.R.id.content);
 
-        // Обработка нажатия для пропуска
+        // Пропуск по нажатию
         rootLayout.setOnClickListener(v -> handleSkip());
 
-        // Начинаем печатать первую систему
         typeNextSystem();
     }
 
@@ -55,21 +62,18 @@ public class MainActivity extends AppCompatActivity {
             String currentStr = systems[currentSystemIndex];
             
             if (currentCharIndex < currentStr.length()) {
-                // Печатаем по одной букве каждые 0.1 сек
                 logText.append(String.valueOf(currentStr.charAt(currentCharIndex)));
                 currentCharIndex++;
-                handler.postDelayed(this::typeNextSystem, 100); 
+                handler.postDelayed(this::typeNextSystem, 100); // 0.1 сек на букву
             } else {
-                // Слово напечатано, ждем 2 сек перед галочкой
                 handler.postDelayed(() -> {
                     if (!isSceneSkipped) {
                         logText.append(".........✓\n");
                         currentSystemIndex++;
                         currentCharIndex = 0;
-                        // Пауза 0.2 сек перед следующим словом
                         handler.postDelayed(this::typeNextSystem, 200);
                     }
-                }, 2000);
+                }, 1000);
             }
         } else {
             showHelloScreen();
@@ -80,7 +84,6 @@ public class MainActivity extends AppCompatActivity {
         if (isSceneSkipped) return;
 
         long currentTime = System.currentTimeMillis();
-        // Если нажали еще раз в течение 2 секунд
         if (currentTime - lastClickTime < 2000) {
             skipAnimation();
         } else {
@@ -93,7 +96,9 @@ public class MainActivity extends AppCompatActivity {
         isSceneSkipped = true;
         handler.removeCallbacksAndMessages(null);
         logText.setText("");
-        for (String s : systems) logText.append(s + ".........✓\n");
+        for (String s : systems) {
+            logText.append(s + ".........✓\n");
+        }
         showHelloScreen();
     }
 
@@ -102,40 +107,12 @@ public class MainActivity extends AppCompatActivity {
         fadeIn.setDuration(2000);
         helloText.startAnimation(fadeIn);
         helloText.setAlpha(1.0f);
-
-        handler.postDelayed(this::finishScene, 3000);
+        
+        // Здесь можно добавить логику появления поля пароля
     }
 
-    private void finishScene() {
-        // Логика закрытия или пароля
-        finish();
-    }
-
-    @Override
-    public void onBackPressed() { /* Заблокировано */ }
-}
-            // Можно вызвать клавиатуру автоматически, если нужно
-        }
-    }
-
-    private void checkPassword() {
-        SharedPreferences prefs = getSharedPreferences("BootSettings", Context.MODE_PRIVATE);
-        String correctPass = prefs.getString("user_password", "");
-        String enteredPass = passwordInput.getText().toString();
-
-        if (enteredPass.equals(correctPass)) {
-            // Пароль верный — закрываем экран разблокировки
-            finish();
-        } else {
-            // Ошибка пароля (можно добавить красное мигание)
-            passwordInput.setText("");
-            Toast.makeText(this, "ACCESS DENIED", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    // Блокируем кнопку "Назад", чтобы нельзя было просто закрыть экран загрузки
     @Override
     public void onBackPressed() {
-        // Ничего не делаем
+        // Блокируем кнопку "Назад", чтобы нельзя было выйти из заставки
     }
 }
