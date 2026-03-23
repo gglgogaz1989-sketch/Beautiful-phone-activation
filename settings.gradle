@@ -1,6 +1,6 @@
 pluginManagement {
     repositories {
-        google()
+        google()        // КРИТИЧНО: Чтобы найти com.android.tools.build:gradle
         mavenCentral()
         gradlePluginPortal()
     }
@@ -8,10 +8,9 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        google()
+        google()        // Для библиотек (AppCompat, Material и т.д.)
         mavenCentral()
     }
 }
 rootProject.name = "StrangeBoot"
 include ':app'
-
