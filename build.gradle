@@ -1,8 +1,11 @@
-// Top-level build file
 buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
     dependencies {
-        // Эта строка теперь будет искать плагин через настройки в settings.gradle
-        classpath "com.android.tools.build:gradle:8.2"
+        // Проверь, чтобы было именно двоеточие перед 8.2.2
+        classpath "com.android.tools.build:gradle:8.2.2"
     }
 }
 
