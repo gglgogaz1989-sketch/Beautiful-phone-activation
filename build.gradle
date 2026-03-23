@@ -1,12 +1,11 @@
-// В ЭТОМ ФАЙЛЕ ТЕПЕРЬ НЕ ДОЛЖНО БЫТЬ БЛОКОВ repositories { ... }
+// Top-level build file
 buildscript {
     dependencies {
-        // Версия плагина (должна совпадать с твоей версией Android Studio)
+        // Эта строка теперь будет искать плагин через настройки в settings.gradle
         classpath "com.android.tools.build:gradle:8.2.2"
     }
 }
 
-// Эта задача просто чистит папку сборки
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
