@@ -4,10 +4,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
-import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -15,95 +13,107 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TextView logText;
-    private TextView helloText;
+    private TextView logText, helloText;
     private EditText passwordInput;
+    private View rootLayout;
 
-    // Список систем для проверки
     private String[] systems = {"CPU", "GPU", "STORAGE", "PHONE"};
-    private int currentStep = 0;
+    private int currentSystemIndex = 0;
+    private int currentCharIndex = 0;
+    private boolean isSceneSkipped = false;
+    private long lastClickTime = 0;
+
     private Handler handler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // Делаем Activity на весь экран (скрываем статус-бар)
+        // Полный экран без лишних элементов
         getWindow().getDecorView().setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         
         setContentView(R.layout.activity_main);
 
-        // Инициализация UI
         logText = findViewById(R.id.logText);
         helloText = findViewById(R.id.helloText);
         passwordInput = findViewById(R.id.passwordInput);
+        rootLayout = findViewById(android.R.id.content);
 
-        // Настройка поля ввода пароля (слушаем нажатие Enter)
-        passwordInput.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                checkPassword();
-                return true;
-            }
-            return false;
-        });
+        // Обработка нажатия для пропуска
+        rootLayout.setOnClickListener(v -> handleSkip());
 
-        // Запуск последовательности через 0.5 сек после открытия
-        handler.postDelayed(this::startBootSequence, 500);
+        // Начинаем печатать первую систему
+        typeNextSystem();
     }
 
-    private void startBootSequence() {
-        if (currentStep < systems.length) {
-            // Пишем название системы (например, CPU)
-            logText.append(systems[currentStep]);
+    private void typeNextSystem() {
+        if (isSceneSkipped) return;
 
-            // Ждем 2 секунды перед появлением галочки ✓
-            handler.postDelayed(() -> {
-                logText.append(".........✓\n");
-                currentStep++;
-
-                // Ждем 0.2 секунды перед следующей строкой
-                handler.postDelayed(this::startBootSequence, 200);
-            }, 2000);
-
+        if (currentSystemIndex < systems.length) {
+            String currentStr = systems[currentSystemIndex];
+            
+            if (currentCharIndex < currentStr.length()) {
+                // Печатаем по одной букве каждые 0.1 сек
+                logText.append(String.valueOf(currentStr.charAt(currentCharIndex)));
+                currentCharIndex++;
+                handler.postDelayed(this::typeNextSystem, 100); 
+            } else {
+                // Слово напечатано, ждем 2 сек перед галочкой
+                handler.postDelayed(() -> {
+                    if (!isSceneSkipped) {
+                        logText.append(".........✓\n");
+                        currentSystemIndex++;
+                        currentCharIndex = 0;
+                        // Пауза 0.2 сек перед следующим словом
+                        handler.postDelayed(this::typeNextSystem, 200);
+                    }
+                }, 2000);
+            }
         } else {
-            // Переходим к финальной стадии
             showHelloScreen();
         }
     }
 
+    private void handleSkip() {
+        if (isSceneSkipped) return;
+
+        long currentTime = System.currentTimeMillis();
+        // Если нажали еще раз в течение 2 секунд
+        if (currentTime - lastClickTime < 2000) {
+            skipAnimation();
+        } else {
+            Toast.makeText(this, "Нажми ещё раз чтобы пропустить", Toast.LENGTH_SHORT).show();
+        }
+        lastClickTime = currentTime;
+    }
+
+    private void skipAnimation() {
+        isSceneSkipped = true;
+        handler.removeCallbacksAndMessages(null);
+        logText.setText("");
+        for (String s : systems) logText.append(s + ".........✓\n");
+        showHelloScreen();
+    }
+
     private void showHelloScreen() {
-        // Плавно проявляем надпись (длительность 3 сек)
         AlphaAnimation fadeIn = new AlphaAnimation(0.0f, 1.0f);
-        fadeIn.setDuration(3000);
+        fadeIn.setDuration(2000);
         helloText.startAnimation(fadeIn);
         helloText.setAlpha(1.0f);
 
-        // Ждем 3 секунды, пока надпись висит, и решаем, что делать дальше
-        handler.postDelayed(() -> {
-            handleSecurityLogic();
-        }, 3000);
+        handler.postDelayed(this::finishScene, 3000);
     }
 
-    private void handleSecurityLogic() {
-        // Получаем сохраненный пароль (по умолчанию пустой)
-        SharedPreferences prefs = getSharedPreferences("BootSettings", Context.MODE_PRIVATE);
-        String savedPassword = prefs.getString("user_password", ""); // Пусто, если не настроено
+    private void finishScene() {
+        // Логика закрытия или пароля
+        finish();
+    }
 
-        if (savedPassword.isEmpty()) {
-            // ПАРОЛЯ НЕТ: Плавно исчезаем и закрываем приложение
-            AlphaAnimation fadeOut = new AlphaAnimation(1.0f, 0.0f);
-            fadeOut.setDuration(1000);
-            findViewById(android.R.id.content).startAnimation(fadeOut);
-            
-            handler.postDelayed(this::finish, 1000);
-        } else {
-            // ПАРОЛЬ ЕСТЬ: Показываем поле ввода
-            passwordInput.setVisibility(View.VISIBLE);
-            passwordInput.requestFocus();
+    @Override
+    public void onBackPressed() { /* Заблокировано */ }
+}
             // Можно вызвать клавиатуру автоматически, если нужно
         }
     }
